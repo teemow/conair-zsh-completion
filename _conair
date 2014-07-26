@@ -1,0 +1,126 @@
+#compdef conair
+# ------------------------------------------------------------------------------
+# Description
+# -----------
+#
+#  Completion script for Conair (http://github.com/teemow/conair)
+#
+#  Source: https://github.com/teemow/conair-zsh-autocomplete
+#
+# ------------------------------------------------------------------------------
+# Authors
+# -------
+#
+#  * Timo Derstappen (https://github.com/teemow)
+#
+# ------------------------------------------------------------------------------
+
+local curcontext="$curcontext" state line ret=1
+
+local -a common_ops
+common_ops=(
+  '--debug[Show more information]'
+  '--version[Print the version and exit]'
+)
+
+local -a _1st_arguments
+_1st_arguments=(
+  'attach:Attach to container'
+  'init:Setup a bridge for the containers and add some iptables forwarding'
+  'destroy:Remove bridge, iptables and unit file'
+  'ps:List all conair containers'
+  'images:List all available conair images'
+  'run:Run a container'
+  'stop:Stop a container'
+  'start:Start a container'
+  'rm:Remove a container'
+  'rmi:Remove an image'
+  'commit:Commit a container'
+  'status:Status of container'
+  'build:Build an image'
+  'pull:Pull an image (eg base)'
+  'bootstrap:Creates an arch rootfs with pacstrap. If there is no pacstrap on your system use "conair pull base" instead'
+  'inspect:Inspect a containers network'
+  'ip:Get the ip of a container'
+  'help:Show a list of commands or help for one command'
+  'version:Print the version and exit'
+)
+
+_arguments -C \
+  $common_ops \
+  '1: :->cmds' \
+  '*: :->args' && ret=0
+
+__conair_containers () {
+  local expl
+  declare -a containers
+
+  containers=(${(f)"$(_call_program commands conair ps | grep -v "Running containers" | grep -v "You should")"})
+  _describe -t conair-containers "Containers" containers "$@"
+}
+
+__conair_images () {
+    local expl
+    declare -a images
+    images=(${(f)"$(_call_program commands conair images|grep -v "Available images")"})
+    _describe -t conair-images "Images" images
+}
+
+case $state in
+  cmds)
+    _describe -t commands 'conair command' _1st_arguments && ret=0
+    ;;
+
+  args)
+    local -a args
+    args=(
+      $common_ops
+    )
+
+    case $words[2] in
+      (run)
+        args=(
+          '2:images:__conair_images'
+          '3:container name'
+        )
+      ;;
+      (build)
+        args=(
+          '2:image name'
+        )
+      ;;
+      (rm)
+        args=(
+          '2:containers:__conair_containers'
+        )
+      ;;
+      (attach)
+        args=(
+          '2:containers:__conair_containers'
+        )
+      ;;
+      (rmi)
+        args=(
+          '2:images:__conair_images'
+        )
+      ;;
+
+      *)
+        (( ret )) && _message 'no more arguments'
+      ;;
+    esac
+
+    _arguments $args && ret=0
+
+  ;;
+esac
+
+return ret
+
+# Local Variables:
+# mode: Shell-Script
+# sh-indentation: 2
+# indent-tabs-mode: nil
+# sh-basic-offset: 2
+# End:
+# vim: ft=zsh sw=2 ts=2 et
